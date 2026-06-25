@@ -1,26 +1,86 @@
 <!DOCTYPE html>
-<html>
+<html lang="fa">
 <head>
-<title>ESP32 Dashboard</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
+<title>ESP32 Weather Station</title>
+
+<link rel="stylesheet" href="style.css">
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 </head>
+
 <body>
 
-<h1>ESP32 Dashboard</h1>
+<div class="container">
 
-<div id="temp"></div>
+<h1>ESP32 Weather Station</h1>
 
-<script>
+<div class="cards">
 
-fetch("YOUR_WORKER_URL/latest")
-.then(r=>r.json())
-.then(data=>{
+<div class="card">
+<h3>🌡 Temperature</h3>
+<div id="temperature" class="value">-- °C</div>
+</div>
 
-document.getElementById("temp").innerText =
-JSON.stringify(data);
+<div class="card">
+<h3>💧 Humidity</h3>
+<div id="humidity" class="value">-- %</div>
+</div>
 
-});
+</div>
 
-</script>
+<div class="toolbar">
+
+<button onclick="loadHistory('1h')">1 Hour</button>
+
+<button onclick="loadHistory('12h')">12 Hours</button>
+
+<button onclick="loadHistory('7d')">7 Days</button>
+
+</div>
+
+<div class="chart-card">
+<h2>Temperature</h2>
+<canvas id="tempChart"></canvas>
+</div>
+
+<div class="chart-card">
+<h2>Humidity</h2>
+<canvas id="humChart"></canvas>
+</div>
+
+<div class="settings">
+
+<h2>Alarm Settings</h2>
+
+<label>Temp Min</label>
+<input id="temp_min" type="number">
+
+<label>Temp Max</label>
+<input id="temp_max" type="number">
+
+<label>Hum Min</label>
+<input id="hum_min" type="number">
+
+<label>Hum Max</label>
+<input id="hum_max" type="number">
+
+<button onclick="saveSettings()">
+Save Settings
+</button>
+
+<button onclick="testBuzzer()">
+Test Buzzer
+</button>
+
+</div>
+
+</div>
+
+<script src="app.js"></script>
 
 </body>
 </html>
