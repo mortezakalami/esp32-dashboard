@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>ESP32 Dashboard</title>
+</head>
+<body>
+
+<h1>ESP32 Dashboard</h1>
+
+<div id="temp"></div>
+
+<script>
+
+fetch("YOUR_WORKER_URL/latest")
+.then(r=>r.json())
+.then(data=>{
+
+document.getElementById("temp").innerText =
+JSON.stringify(data);
+
+});
+
+</script>
+
+</body>
+</html>
