@@ -2,16 +2,12 @@ const API = "https://esp32-api.kalamidev.workers.dev";
 
 let tempChart, humChart;
 let currentRange = '1h';
-let realtimeTimer = null;
-let realtimeIntervalMs = 3000;
 
 // ===== توابع کمکی =====
-function formatUptime(seconds) {
-  if (!seconds) return '--';
-  const d = Math.floor(seconds / 86400);
-  const h = Math.floor((seconds % 86400) / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  return `${d} روز و ${h} ساعت و ${m} دقیقه`;
+function formatDate(timestamp) {
+  if (!timestamp) return '--';
+  const d = new Date(timestamp);
+  return d.toLocaleString('fa-IR', { hour: '2-digit', minute: '2-digit', month: 'short', day: 'numeric' });
 }
 
 function calcHeatIndex(tempC, hum) {
@@ -31,10 +27,10 @@ function calcDewPoint(tempC, hum) {
   return (b * alpha) / (a - alpha);
 }
 
-// ===== بارگذاری داده‌های لحظه‌ای =====
-async function loadRealtime() {
+// ===== بارگذاری آخرین داده (از دیتابیس) =====
+async function loadLatest() {
   try {
-    const r = await fetch(API + "/realtime/latest");
+    const r = await fetch(API + "/latest");
     const data = await r.json();
     if (!data || data.temperature == null) return;
 
@@ -43,24 +39,12 @@ async function loadRealtime() {
 
     document.getElementById("temperature").innerHTML = temp.toFixed(1) + ' <span class="unit">°C</span>';
     document.getElementById("humidity").innerHTML = hum.toFixed(1) + ' <span class="unit">%</span>';
+    document.getElementById("lastUpdate").innerText = formatDate(data.created_at);
 
     const hi = calcHeatIndex(temp, hum);
     const dp = calcDewPoint(temp, hum);
     document.getElementById("heatIndex").innerText = hi != null ? hi.toFixed(1) : '--';
     document.getElementById("dewPoint").innerText = dp != null ? dp.toFixed(1) : '--';
-  } catch (e) {
-    console.error("loadRealtime error:", e);
-  }
-}
-
-// ===== بارگذاری آخرین داده تاریخی (برای uptime) =====
-async function loadLatest() {
-  try {
-    const r = await fetch(API + "/latest");
-    const data = await r.json();
-    if (data && data.uptime != null) {
-      document.getElementById("uptime").innerText = formatUptime(data.uptime);
-    }
   } catch (e) {
     console.error("loadLatest error:", e);
   }
@@ -98,16 +82,11 @@ async function loadSettings() {
     document.getElementById("temp_max").value = settings.temp_max || 35;
     document.getElementById("hum_min").value = settings.hum_min || 20;
     document.getElementById("hum_max").value = settings.hum_max || 80;
-    document.getElementById("upload_interval").value = settings.upload_interval || 300000;
-    document.getElementById("realtime_interval").value = settings.realtime_interval || 3;
+    document.getElementById("upload_interval").value = settings.upload_interval || 60000;
     
-    // تبدیل مقادیر متنی دیتابیس به تیک چک‌باکس
     document.getElementById("telegram_enable").checked = (settings.telegram_enable == 1);
     document.getElementById("buzzer_enabled").checked = (settings.buzzer_enabled === undefined || settings.buzzer_enabled == 1);
     document.getElementById("display_enabled").checked = (settings.display_enabled === undefined || settings.display_enabled == 1);
-
-    const newInterval = parseInt(document.getElementById("realtime_interval").value) || 3;
-    restartRealtimeTimer(newInterval * 1000);
   } catch (e) {
     console.error("loadSettings error:", e);
   }
@@ -115,20 +94,17 @@ async function loadSettings() {
 
 // ===== ذخیره تنظیمات =====
 async function saveSettings() {
-  // تبدیل تیک چک‌باکس به ۱ و ۰ برای ارسال به سرور
   const data = {
     temp_min: document.getElementById("temp_min").value,
     temp_max: document.getElementById("temp_max").value,
     hum_min: document.getElementById("hum_min").value,
     hum_max: document.getElementById("hum_max").value,
     upload_interval: document.getElementById("upload_interval").value,
-    realtime_interval: document.getElementById("realtime_interval").value,
     telegram_enable: document.getElementById("telegram_enable").checked ? 1 : 0,
     buzzer_enabled: document.getElementById("buzzer_enabled").checked ? 1 : 0,
     display_enabled: document.getElementById("display_enabled").checked ? 1 : 0
   };
 
-  // گرفتن کلید API به صورت موقت (باید در محیط امن قرار گیرد)
   const apiKey = prompt("لطفاً کلید API را وارد کنید:");
   if (!apiKey) return;
 
@@ -142,29 +118,15 @@ async function saveSettings() {
       body: JSON.stringify(data)
     });
     alert("تنظیمات با موفقیت ذخیره شد ✅");
-
-    const newInterval = parseInt(data.realtime_interval) || 3;
-    restartRealtimeTimer(newInterval * 1000);
   } catch (e) {
     alert("خطا در ذخیره تنظیمات");
   }
-}
-
-// ===== راه‌اندازی مجدد تایمر realtime =====
-function restartRealtimeTimer(intervalMs) {
-  if (realtimeTimer) {
-    clearInterval(realtimeTimer);
-    realtimeTimer = null;
-  }
-  realtimeIntervalMs = intervalMs;
-  realtimeTimer = setInterval(loadRealtime, intervalMs);
 }
 
 // ===== تست بوق =====
 async function testBuzzer() {
   const apiKey = prompt("لطفاً کلید API را وارد کنید:");
   if (!apiKey) return;
-
   try {
     await fetch(API + "/buzzer/test", {
       headers: { "X-API-Key": apiKey }
@@ -177,10 +139,9 @@ async function testBuzzer() {
 
 // ===== پاک کردن دیتابیس =====
 async function clearDatabase() {
-  if (!confirm("⚠️ آیا مطمئن هستید که می‌خواهید تمام داده‌ها را پاک کنید؟ این عمل غیرقابل بازگشت است!")) return;
-  const apiKey = prompt("برای تأیید، کلید API را وارد کنید:");
+  if (!confirm("⚠️ آیا مطمئن هستید که می‌خواهید تمام داده‌ها را پاک کنید؟")) return;
+  const apiKey = prompt("کلید API را وارد کنید:");
   if (!apiKey) return;
-
   try {
     const res = await fetch(API + "/clear", {
       method: "DELETE",
@@ -188,9 +149,10 @@ async function clearDatabase() {
     });
     const result = await res.json();
     if (result.success) {
-      alert("همه داده‌ها با موفقیت پاک شدند 🗑️");
+      alert("همه داده‌ها پاک شدند 🗑️");
       loadHistory(currentRange);
       loadStats();
+      loadLatest();
     } else {
       alert("خطا: " + (result.error || "نامشخص"));
     }
@@ -226,7 +188,6 @@ async function loadHistory(range, btnElement = null) {
     const tempData = temps.map(v => (v !== undefined && v !== null) ? v : null);
     const humData = hums.map(v => (v !== undefined && v !== null) ? v : null);
 
-    // تنظیمات مشترک نمودار برای تم تاریک
     const chartOptions = {
       responsive: true,
       maintainAspectRatio: false,
@@ -290,8 +251,6 @@ async function loadHistory(range, btnElement = null) {
 document.addEventListener("DOMContentLoaded", function() {
   const now = new Date();
   const oneDayAgo = new Date(now.getTime() - 24*60*60*1000);
-  
-  // تنظیم timezone محلی برای فرمت datetime-local
   const tzOffset = now.getTimezoneOffset() * 60000;
   document.getElementById("fromDate").value = new Date(oneDayAgo - tzOffset).toISOString().slice(0,16);
   document.getElementById("toDate").value = new Date(now - tzOffset).toISOString().slice(0,16);
@@ -305,11 +264,10 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 
 // ===== اجرای اولیه =====
-loadRealtime();
 loadLatest();
 loadSettings();
 loadHistory('1h');
 loadStats();
 
-setInterval(loadLatest, 10000);
-setInterval(loadStats, 60000);
+setInterval(loadLatest, 60000);    // هر ۱ دقیقه آخرین داده
+setInterval(loadStats, 60000);     // هر ۱ دقیقه آمار
