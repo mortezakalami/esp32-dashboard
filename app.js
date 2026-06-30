@@ -3,7 +3,7 @@ const API = "https://esp32-api.kalamidev.workers.dev";
 let tempChart, humChart;
 let currentRange = '1h';
 let realtimeTimer = null;
-let realtimeIntervalMs = 3000; // مقدار پیش‌فرض
+let realtimeIntervalMs = 3000;
 
 // ===== توابع کمکی =====
 function formatUptime(seconds) {
@@ -11,7 +11,7 @@ function formatUptime(seconds) {
   const d = Math.floor(seconds / 86400);
   const h = Math.floor((seconds % 86400) / 3600);
   const m = Math.floor((seconds % 3600) / 60);
-  return `${d}d ${h}h ${m}m`;
+  return `${d} روز و ${h} ساعت و ${m} دقیقه`;
 }
 
 function calcHeatIndex(tempC, hum) {
@@ -41,8 +41,8 @@ async function loadRealtime() {
     const temp = data.temperature;
     const hum = data.humidity;
 
-    document.getElementById("temperature").innerText = temp.toFixed(1) + " °C";
-    document.getElementById("humidity").innerText = hum.toFixed(1) + " %";
+    document.getElementById("temperature").innerHTML = temp.toFixed(1) + ' <span class="unit">°C</span>';
+    document.getElementById("humidity").innerHTML = hum.toFixed(1) + ' <span class="unit">%</span>';
 
     const hi = calcHeatIndex(temp, hum);
     const dp = calcDewPoint(temp, hum);
@@ -72,9 +72,9 @@ async function loadStats() {
     const r = await fetch(API + "/stats");
     const stats = await r.json();
     if (stats.temp) {
-      document.getElementById("tempMin").innerText = stats.temp.min != null ? stats.temp.min.toFixed(1) + '°C' : '--';
-      document.getElementById("tempMax").innerText = stats.temp.max != null ? stats.temp.max.toFixed(1) + '°C' : '--';
-      document.getElementById("tempAvg").innerText = stats.temp.avg != null ? stats.temp.avg.toFixed(1) + '°C' : '--';
+      document.getElementById("tempMin").innerText = stats.temp.min != null ? stats.temp.min.toFixed(1) + '°' : '--';
+      document.getElementById("tempMax").innerText = stats.temp.max != null ? stats.temp.max.toFixed(1) + '°' : '--';
+      document.getElementById("tempAvg").innerText = stats.temp.avg != null ? stats.temp.avg.toFixed(1) + '°' : '--';
     }
     if (stats.hum) {
       document.getElementById("humMin").innerText = stats.hum.min != null ? stats.hum.min.toFixed(1) + '%' : '--';
@@ -99,12 +99,13 @@ async function loadSettings() {
     document.getElementById("hum_min").value = settings.hum_min || 20;
     document.getElementById("hum_max").value = settings.hum_max || 80;
     document.getElementById("upload_interval").value = settings.upload_interval || 300000;
-    document.getElementById("telegram_enable").value = settings.telegram_enable || 0;
     document.getElementById("realtime_interval").value = settings.realtime_interval || 3;
-    document.getElementById("buzzer_enabled").value = settings.buzzer_enabled !== undefined ? settings.buzzer_enabled : 1;
-    document.getElementById("display_enabled").value = settings.display_enabled !== undefined ? settings.display_enabled : 1;
+    
+    // تبدیل مقادیر متنی دیتابیس به تیک چک‌باکس
+    document.getElementById("telegram_enable").checked = (settings.telegram_enable == 1);
+    document.getElementById("buzzer_enabled").checked = (settings.buzzer_enabled === undefined || settings.buzzer_enabled == 1);
+    document.getElementById("display_enabled").checked = (settings.display_enabled === undefined || settings.display_enabled == 1);
 
-    // راه‌اندازی مجدد تایمر realtime با مقدار جدید
     const newInterval = parseInt(document.getElementById("realtime_interval").value) || 3;
     restartRealtimeTimer(newInterval * 1000);
   } catch (e) {
@@ -114,27 +115,34 @@ async function loadSettings() {
 
 // ===== ذخیره تنظیمات =====
 async function saveSettings() {
+  // تبدیل تیک چک‌باکس به ۱ و ۰ برای ارسال به سرور
   const data = {
     temp_min: document.getElementById("temp_min").value,
     temp_max: document.getElementById("temp_max").value,
     hum_min: document.getElementById("hum_min").value,
     hum_max: document.getElementById("hum_max").value,
     upload_interval: document.getElementById("upload_interval").value,
-    telegram_enable: document.getElementById("telegram_enable").value,
     realtime_interval: document.getElementById("realtime_interval").value,
-    buzzer_enabled: document.getElementById("buzzer_enabled").value,
-    display_enabled: document.getElementById("display_enabled").value
+    telegram_enable: document.getElementById("telegram_enable").checked ? 1 : 0,
+    buzzer_enabled: document.getElementById("buzzer_enabled").checked ? 1 : 0,
+    display_enabled: document.getElementById("display_enabled").checked ? 1 : 0
   };
+
+  // گرفتن کلید API به صورت موقت (باید در محیط امن قرار گیرد)
+  const apiKey = prompt("لطفاً کلید API را وارد کنید:");
+  if (!apiKey) return;
 
   try {
     await fetch(API + "/settings/update", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        "X-API-Key": apiKey
+      },
       body: JSON.stringify(data)
     });
-    alert("تنظیمات ذخیره شد ✅");
+    alert("تنظیمات با موفقیت ذخیره شد ✅");
 
-    // به‌روزرسانی تایمر realtime بلافاصله بعد از ذخیره
     const newInterval = parseInt(data.realtime_interval) || 3;
     restartRealtimeTimer(newInterval * 1000);
   } catch (e) {
@@ -150,13 +158,17 @@ function restartRealtimeTimer(intervalMs) {
   }
   realtimeIntervalMs = intervalMs;
   realtimeTimer = setInterval(loadRealtime, intervalMs);
-  console.log(`🔄 Realtime timer set to ${intervalMs}ms`);
 }
 
 // ===== تست بوق =====
 async function testBuzzer() {
+  const apiKey = prompt("لطفاً کلید API را وارد کنید:");
+  if (!apiKey) return;
+
   try {
-    await fetch(API + "/buzzer/test");
+    await fetch(API + "/buzzer/test", {
+      headers: { "X-API-Key": apiKey }
+    });
     alert("دستور تست بوق ارسال شد 🔔");
   } catch (e) {
     alert("خطا در ارسال دستور");
@@ -166,7 +178,6 @@ async function testBuzzer() {
 // ===== پاک کردن دیتابیس =====
 async function clearDatabase() {
   if (!confirm("⚠️ آیا مطمئن هستید که می‌خواهید تمام داده‌ها را پاک کنید؟ این عمل غیرقابل بازگشت است!")) return;
-
   const apiKey = prompt("برای تأیید، کلید API را وارد کنید:");
   if (!apiKey) return;
 
@@ -188,8 +199,13 @@ async function clearDatabase() {
   }
 }
 
-// ===== بارگذاری تاریخچه با بازه (نمودار) =====
-async function loadHistory(range) {
+// ===== بارگذاری تاریخچه (نمودار) =====
+async function loadHistory(range, btnElement = null) {
+  if(btnElement) {
+    document.querySelectorAll('.btn-tab').forEach(b => b.classList.remove('active'));
+    btnElement.classList.add('active');
+  }
+
   currentRange = range;
   let url = API + "/history?range=" + range;
 
@@ -203,17 +219,27 @@ async function loadHistory(range) {
     const r = await fetch(url);
     const data = await r.json();
 
-    const labels = data.map(x => new Date(x.created_at).toLocaleString());
+    const labels = data.map(x => new Date(x.created_at).toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' }));
     const temps = data.map(x => x.temperature);
     const hums = data.map(x => x.humidity);
 
     const tempData = temps.map(v => (v !== undefined && v !== null) ? v : null);
     const humData = hums.map(v => (v !== undefined && v !== null) ? v : null);
 
+    // تنظیمات مشترک نمودار برای تم تاریک
+    const chartOptions = {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8', maxTicksLimit: 10 } },
+        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } }
+      }
+    };
+
     if (tempChart) tempChart.destroy();
     if (humChart) humChart.destroy();
 
-    // نمودار دما
     const ctx1 = document.getElementById("tempChart").getContext("2d");
     tempChart = new Chart(ctx1, {
       type: "line",
@@ -222,27 +248,19 @@ async function loadHistory(range) {
         datasets: [{
           label: "دما (°C)",
           data: tempData,
-          borderColor: "#f97316",
-          backgroundColor: "rgba(249, 115, 22, 0.1)",
+          borderColor: "#0ea5e9",
+          backgroundColor: "rgba(14, 165, 233, 0.1)",
           borderWidth: 2,
-          pointBackgroundColor: "#f97316",
-          pointRadius: 2,
-          spanGaps: false,
-          tension: 0.2,
+          pointBackgroundColor: "#0ea5e9",
+          pointRadius: 0,
+          pointHitRadius: 10,
+          tension: 0.4,
           fill: true
         }]
       },
-      options: {
-        responsive: true,
-        plugins: { legend: { labels: { color: "#cbd5e1" } } },
-        scales: {
-          x: { ticks: { color: "#94a3b8", maxTicksLimit: 15 } },
-          y: { ticks: { color: "#94a3b8" } }
-        }
-      }
+      options: chartOptions
     });
 
-    // نمودار رطوبت
     const ctx2 = document.getElementById("humChart").getContext("2d");
     humChart = new Chart(ctx2, {
       type: "line",
@@ -251,24 +269,17 @@ async function loadHistory(range) {
         datasets: [{
           label: "رطوبت (%)",
           data: humData,
-          borderColor: "#3b82f6",
-          backgroundColor: "rgba(59, 130, 246, 0.1)",
+          borderColor: "#8b5cf6",
+          backgroundColor: "rgba(139, 92, 246, 0.1)",
           borderWidth: 2,
-          pointBackgroundColor: "#3b82f6",
-          pointRadius: 2,
-          spanGaps: false,
-          tension: 0.2,
+          pointBackgroundColor: "#8b5cf6",
+          pointRadius: 0,
+          pointHitRadius: 10,
+          tension: 0.4,
           fill: true
         }]
       },
-      options: {
-        responsive: true,
-        plugins: { legend: { labels: { color: "#cbd5e1" } } },
-        scales: {
-          x: { ticks: { color: "#94a3b8", maxTicksLimit: 15 } },
-          y: { ticks: { color: "#94a3b8" } }
-        }
-      }
+      options: chartOptions
     });
   } catch (e) {
     console.error("loadHistory error:", e);
@@ -279,8 +290,11 @@ async function loadHistory(range) {
 document.addEventListener("DOMContentLoaded", function() {
   const now = new Date();
   const oneDayAgo = new Date(now.getTime() - 24*60*60*1000);
-  document.getElementById("fromDate").value = oneDayAgo.toISOString().slice(0,16);
-  document.getElementById("toDate").value = now.toISOString().slice(0,16);
+  
+  // تنظیم timezone محلی برای فرمت datetime-local
+  const tzOffset = now.getTimezoneOffset() * 60000;
+  document.getElementById("fromDate").value = new Date(oneDayAgo - tzOffset).toISOString().slice(0,16);
+  document.getElementById("toDate").value = new Date(now - tzOffset).toISOString().slice(0,16);
 
   document.getElementById("applyCustomRange").addEventListener("click", function() {
     const from = document.getElementById("fromDate").value;
@@ -288,23 +302,14 @@ document.addEventListener("DOMContentLoaded", function() {
     if (from && to) loadHistory('custom');
     else alert("لطفاً هر دو تاریخ را انتخاب کنید.");
   });
-
-  document.getElementById("resetRange").addEventListener("click", function() {
-    loadHistory('1h');
-    const now = new Date();
-    const oneDayAgo = new Date(now.getTime() - 24*60*60*1000);
-    document.getElementById("fromDate").value = oneDayAgo.toISOString().slice(0,16);
-    document.getElementById("toDate").value = now.toISOString().slice(0,16);
-  });
 });
 
-// ===== بارگذاری اولیه =====
+// ===== اجرای اولیه =====
 loadRealtime();
 loadLatest();
 loadSettings();
 loadHistory('1h');
 loadStats();
 
-// ===== تایمرهای ثابت =====
-setInterval(loadLatest, 10000);      // uptime هر ۱۰ ثانیه
-setInterval(loadStats, 60000);       // آمار روزانه هر ۱ دقیقه
+setInterval(loadLatest, 10000);
+setInterval(loadStats, 60000);
