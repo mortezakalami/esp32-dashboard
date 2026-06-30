@@ -6,7 +6,6 @@
   <title>ایستگاه هواشناسی ESP32</title>
   <link rel="stylesheet" href="style.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- برای آیکون‌ها -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
 </head>
 <body>
@@ -100,7 +99,7 @@
 
     <!-- تنظیمات -->
     <div class="settings glass">
-      <h2><i class="fas fa-sliders-h"></i> تنظیمات هشدار</h2>
+      <h2><i class="fas fa-sliders-h"></i> تنظیمات</h2>
       <div class="settings-grid">
         <label>دمای حداقل</label>
         <input type="number" id="temp_min" step="0.1" />
@@ -110,12 +109,29 @@
         <input type="number" id="hum_min" step="0.1" />
         <label>رطوبت حداکثر</label>
         <input type="number" id="hum_max" step="0.1" />
-        <label>فاصله ارسال (میلی‌ثانیه)</label>
+        
+        <label>فاصله ارسال تاریخی (ms)</label>
         <input type="number" id="upload_interval" step="1000" />
+        
+        <label>فاصله به‌روزرسانی لحظه‌ای (ثانیه)</label>
+        <input type="number" id="realtime_interval" step="1" min="1" />
+        
         <label>ارسال به تلگرام</label>
         <select id="telegram_enable">
           <option value="0">غیرفعال</option>
           <option value="1">فعال</option>
+        </select>
+
+        <label>فعال بودن بوق</label>
+        <select id="buzzer_enabled">
+          <option value="1">فعال</option>
+          <option value="0">غیرفعال</option>
+        </select>
+
+        <label>فعال بودن نمایشگر</label>
+        <select id="display_enabled">
+          <option value="1">فعال</option>
+          <option value="0">غیرفعال</option>
         </select>
       </div>
       <div class="settings-actions">
