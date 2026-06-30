@@ -1,86 +1,131 @@
 <!DOCTYPE html>
-<html lang="fa">
+<html lang="fa" dir="rtl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-
-<title>ESP32 Weather Station</title>
-
-<link rel="stylesheet" href="style.css">
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ایستگاه هواشناسی ESP32</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- برای آیکون‌ها -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
 </head>
-
 <body>
+  <div class="container">
+    <header>
+      <h1><i class="fas fa-cloud-sun"></i> ایستگاه هواشناسی</h1>
+      <div class="uptime-box">
+        <i class="fas fa-clock"></i>
+        <span id="uptime">--</span>
+      </div>
+    </header>
 
-<div class="container">
+    <!-- کارت‌های اصلی -->
+    <div class="cards-grid">
+      <div class="card glass">
+        <div class="card-icon"><i class="fas fa-thermometer-half"></i></div>
+        <h3>دمای فعلی</h3>
+        <div class="value" id="temperature">-- °C</div>
+        <div class="sub-info">
+          <span>احساسی: <span id="heatIndex">--</span> °C</span>
+          <span>نقطه شبنم: <span id="dewPoint">--</span> °C</span>
+        </div>
+      </div>
 
-<h1>ESP32 Weather Station</h1>
+      <div class="card glass">
+        <div class="card-icon"><i class="fas fa-tint"></i></div>
+        <h3>رطوبت فعلی</h3>
+        <div class="value" id="humidity">-- %</div>
+      </div>
+    </div>
 
-<div class="cards">
+    <!-- آمار روزانه -->
+    <div class="stats-grid glass">
+      <div class="stat-item">
+        <span class="stat-label">حداقل دما</span>
+        <span class="stat-value" id="tempMin">--</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">حداکثر دما</span>
+        <span class="stat-value" id="tempMax">--</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">میانگین دما</span>
+        <span class="stat-value" id="tempAvg">--</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">حداقل رطوبت</span>
+        <span class="stat-value" id="humMin">--</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">حداکثر رطوبت</span>
+        <span class="stat-value" id="humMax">--</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">میانگین رطوبت</span>
+        <span class="stat-value" id="humAvg">--</span>
+      </div>
+    </div>
 
-<div class="card">
-<h3>🌡 Temperature</h3>
-<div id="temperature" class="value">-- °C</div>
-</div>
+    <!-- کنترل بازه زمانی نمودار -->
+    <div class="chart-controls glass">
+      <div class="control-group">
+        <label>از تاریخ:</label>
+        <input type="datetime-local" id="fromDate" />
+      </div>
+      <div class="control-group">
+        <label>تا تاریخ:</label>
+        <input type="datetime-local" id="toDate" />
+      </div>
+      <button id="applyCustomRange" class="btn-primary"><i class="fas fa-check"></i> اعمال بازه</button>
+      <button id="resetRange" class="btn-secondary"><i class="fas fa-undo"></i> بازنشانی</button>
+    </div>
 
-<div class="card">
-<h3>💧 Humidity</h3>
-<div id="humidity" class="value">-- %</div>
-</div>
+    <!-- دکمه‌های بازه سریع -->
+    <div class="toolbar">
+      <button onclick="loadHistory('1h')">۱ ساعت</button>
+      <button onclick="loadHistory('12h')">۱۲ ساعت</button>
+      <button onclick="loadHistory('7d')">۷ روز</button>
+    </div>
 
-</div>
+    <!-- نمودارها -->
+    <div class="chart-card glass">
+      <h2><i class="fas fa-chart-line"></i> دما</h2>
+      <canvas id="tempChart"></canvas>
+    </div>
 
-<div class="toolbar">
+    <div class="chart-card glass">
+      <h2><i class="fas fa-chart-line"></i> رطوبت</h2>
+      <canvas id="humChart"></canvas>
+    </div>
 
-<button onclick="loadHistory('1h')">1 Hour</button>
+    <!-- تنظیمات -->
+    <div class="settings glass">
+      <h2><i class="fas fa-sliders-h"></i> تنظیمات هشدار</h2>
+      <div class="settings-grid">
+        <label>دمای حداقل</label>
+        <input type="number" id="temp_min" step="0.1" />
+        <label>دمای حداکثر</label>
+        <input type="number" id="temp_max" step="0.1" />
+        <label>رطوبت حداقل</label>
+        <input type="number" id="hum_min" step="0.1" />
+        <label>رطوبت حداکثر</label>
+        <input type="number" id="hum_max" step="0.1" />
+        <label>فاصله ارسال (میلی‌ثانیه)</label>
+        <input type="number" id="upload_interval" step="1000" />
+        <label>ارسال به تلگرام</label>
+        <select id="telegram_enable">
+          <option value="0">غیرفعال</option>
+          <option value="1">فعال</option>
+        </select>
+      </div>
+      <div class="settings-actions">
+        <button onclick="saveSettings()" class="btn-primary"><i class="fas fa-save"></i> ذخیره تنظیمات</button>
+        <button onclick="testBuzzer()" class="btn-secondary"><i class="fas fa-bell"></i> تست بوق</button>
+        <button onclick="clearDatabase()" class="btn-danger"><i class="fas fa-trash-alt"></i> پاک کردن دیتابیس</button>
+      </div>
+    </div>
+  </div>
 
-<button onclick="loadHistory('12h')">12 Hours</button>
-
-<button onclick="loadHistory('7d')">7 Days</button>
-
-</div>
-
-<div class="chart-card">
-<h2>Temperature</h2>
-<canvas id="tempChart"></canvas>
-</div>
-
-<div class="chart-card">
-<h2>Humidity</h2>
-<canvas id="humChart"></canvas>
-</div>
-
-<div class="settings">
-
-<h2>Alarm Settings</h2>
-
-<label>Temp Min</label>
-<input id="temp_min" type="number">
-
-<label>Temp Max</label>
-<input id="temp_max" type="number">
-
-<label>Hum Min</label>
-<input id="hum_min" type="number">
-
-<label>Hum Max</label>
-<input id="hum_max" type="number">
-
-<button onclick="saveSettings()">
-Save Settings
-</button>
-
-<button onclick="testBuzzer()">
-Test Buzzer
-</button>
-
-</div>
-
-</div>
-
-<script src="app.js"></script>
-
+  <script src="app.js"></script>
 </body>
 </html>
