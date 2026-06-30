@@ -23,10 +23,8 @@
           <p class="subtitle">سیستم مانیتورینگ آنلاین دما و رطوبت</p>
         </div>
       </div>
-      <div class="uptime-box">
-        <i class="fas fa-bolt text-accent"></i>
-        <span>آپ‌تایم:</span>
-        <strong id="uptime">--</strong>
+      <div class="uptime-box" style="display:none;">
+        <!-- آپ‌تایم حذف شد -->
       </div>
     </header>
 
@@ -40,6 +38,7 @@
         <div class="sub-info">
           <div class="badge">احساسی: <strong id="heatIndex">--</strong> °C</div>
           <div class="badge">شبنم: <strong id="dewPoint">--</strong> °C</div>
+          <div class="badge">آخرین بروزرسانی: <strong id="lastUpdate">--</strong></div>
         </div>
       </div>
 
@@ -109,8 +108,7 @@
         <!-- بخش زمان‌بندی -->
         <div class="settings-group">
           <h4><i class="fas fa-clock"></i> زمان‌بندی (میلی‌ثانیه)</h4>
-          <div class="input-group"><label>ارسال دیتا تاریخی (History)</label><input type="number" id="upload_interval" class="input-modern" step="1000" /></div>
-          <div class="input-group"><label>ارسال دیتا لحظه‌ای (Realtime)</label><input type="number" id="realtime_interval" class="input-modern" step="1" /></div>
+          <div class="input-group"><label>فاصله ارسال به سرور</label><input type="number" id="upload_interval" class="input-modern" step="1000" /></div>
         </div>
 
         <!-- بخش سوئیچ‌ها -->
