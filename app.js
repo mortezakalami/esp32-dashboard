@@ -27,7 +27,7 @@ function calcDewPoint(tempC, hum) {
   return (b * alpha) / (a - alpha);
 }
 
-// ===== بارگذاری آخرین داده (از دیتابیس) =====
+// ===== بارگذاری آخرین داده =====
 async function loadLatest() {
   try {
     const r = await fetch(API + "/latest");
@@ -70,7 +70,7 @@ async function loadStats() {
   }
 }
 
-// ===== بارگذاری تنظیمات =====
+// ===== بارگذاری تنظیمات (فقط محدوده‌ها و تلگرام) =====
 async function loadSettings() {
   try {
     const r = await fetch(API + "/settings");
@@ -82,34 +82,28 @@ async function loadSettings() {
     document.getElementById("temp_max").value = settings.temp_max || 35;
     document.getElementById("hum_min").value = settings.hum_min || 20;
     document.getElementById("hum_max").value = settings.hum_max || 80;
-    document.getElementById("upload_interval").value = settings.upload_interval || 60000;
     
     document.getElementById("telegram_enable").checked = (settings.telegram_enable == 1);
-    document.getElementById("buzzer_enabled").checked = (settings.buzzer_enabled === undefined || settings.buzzer_enabled == 1);
-    document.getElementById("display_enabled").checked = (settings.display_enabled === undefined || settings.display_enabled == 1);
   } catch (e) {
     console.error("loadSettings error:", e);
   }
 }
 
-// ===== ذخیره تنظیمات =====
+// ===== ذخیره تنظیمات (فقط محدوده‌ها و تلگرام) =====
 async function saveSettings() {
   const data = {
     temp_min: document.getElementById("temp_min").value,
     temp_max: document.getElementById("temp_max").value,
     hum_min: document.getElementById("hum_min").value,
     hum_max: document.getElementById("hum_max").value,
-    upload_interval: document.getElementById("upload_interval").value,
-    telegram_enable: document.getElementById("telegram_enable").checked ? 1 : 0,
-    buzzer_enabled: document.getElementById("buzzer_enabled").checked ? 1 : 0,
-    display_enabled: document.getElementById("display_enabled").checked ? 1 : 0
+    telegram_enable: document.getElementById("telegram_enable").checked ? 1 : 0
   };
 
   const apiKey = prompt("لطفاً کلید API را وارد کنید:");
   if (!apiKey) return;
 
   try {
-    await fetch(API + "/settings/update", {
+    const res = await fetch(API + "/settings/update", {
       method: "POST",
       headers: { 
         "Content-Type": "application/json",
@@ -117,23 +111,15 @@ async function saveSettings() {
       },
       body: JSON.stringify(data)
     });
-    alert("تنظیمات با موفقیت ذخیره شد ✅");
+    const result = await res.json();
+    if (result.success) {
+      alert("تنظیمات با موفقیت ذخیره شد ✅");
+    } else {
+      alert("خطا: " + (result.error || "نامشخص"));
+    }
   } catch (e) {
-    alert("خطا در ذخیره تنظیمات");
-  }
-}
-
-// ===== تست بوق =====
-async function testBuzzer() {
-  const apiKey = prompt("لطفاً کلید API را وارد کنید:");
-  if (!apiKey) return;
-  try {
-    await fetch(API + "/buzzer/test", {
-      headers: { "X-API-Key": apiKey }
-    });
-    alert("دستور تست بوق ارسال شد 🔔");
-  } catch (e) {
-    alert("خطا در ارسال دستور");
+    alert("خطا در ارتباط با سرور");
+    console.error("saveSettings error:", e);
   }
 }
 
@@ -269,5 +255,5 @@ loadSettings();
 loadHistory('1h');
 loadStats();
 
-setInterval(loadLatest, 60000);    // هر ۱ دقیقه آخرین داده
-setInterval(loadStats, 60000);     // هر ۱ دقیقه آمار
+setInterval(loadLatest, 60000);
+setInterval(loadStats, 60000);
