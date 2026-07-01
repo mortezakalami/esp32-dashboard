@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>داشبورد هواشناسی ESP32</title>
   
-  <!-- فونت وزیرمتن -->
   <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -23,9 +22,7 @@
           <p class="subtitle">سیستم مانیتورینگ آنلاین دما و رطوبت</p>
         </div>
       </div>
-      <div class="uptime-box" style="display:none;">
-        <!-- آپ‌تایم حذف شد -->
-      </div>
+      <div class="uptime-box" style="display:none;"></div>
     </header>
 
     <!-- کارت‌های اصلی -->
@@ -91,7 +88,7 @@
       </div>
     </div>
 
-    <!-- تنظیمات -->
+    <!-- تنظیمات (فقط محدوده‌های هشدار + تلگرام) -->
     <div class="settings glass-panel">
       <h2 class="section-title"><i class="fas fa-sliders"></i> پیکربندی سیستم</h2>
       
@@ -105,36 +102,13 @@
           <div class="input-group"><label>حداکثر رطوبت (%)</label><input type="number" id="hum_max" class="input-modern" step="0.1" /></div>
         </div>
 
-        <!-- بخش زمان‌بندی -->
-        <div class="settings-group">
-          <h4><i class="fas fa-clock"></i> زمان‌بندی (میلی‌ثانیه)</h4>
-          <div class="input-group"><label>فاصله ارسال به سرور</label><input type="number" id="upload_interval" class="input-modern" step="1000" /></div>
-        </div>
-
-        <!-- بخش سوئیچ‌ها -->
+        <!-- فقط سوئیچ تلگرام -->
         <div class="settings-group">
           <h4><i class="fas fa-toggle-on"></i> امکانات</h4>
-          
           <div class="toggle-group">
             <label>ربات تلگرام</label>
             <label class="switch">
               <input type="checkbox" id="telegram_enable">
-              <span class="slider round"></span>
-            </label>
-          </div>
-          
-          <div class="toggle-group">
-            <label>بوق هشدار (Buzzer)</label>
-            <label class="switch">
-              <input type="checkbox" id="buzzer_enabled">
-              <span class="slider round"></span>
-            </label>
-          </div>
-          
-          <div class="toggle-group">
-            <label>نمایشگر دیجیتال</label>
-            <label class="switch">
-              <input type="checkbox" id="display_enabled">
               <span class="slider round"></span>
             </label>
           </div>
@@ -143,7 +117,6 @@
 
       <div class="settings-actions">
         <button onclick="saveSettings()" class="btn-primary"><i class="fas fa-save"></i> ذخیره تغییرات</button>
-        <button onclick="testBuzzer()" class="btn-secondary"><i class="fas fa-volume-high"></i> تست بوق</button>
         <button onclick="clearDatabase()" class="btn-danger"><i class="fas fa-trash"></i> ریست دیتابیس</button>
       </div>
     </div>
