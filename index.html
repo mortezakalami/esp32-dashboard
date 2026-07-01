@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>داشبورد هواشناسی ESP32</title>
-  
   <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -22,7 +21,6 @@
           <p class="subtitle">سیستم مانیتورینگ آنلاین دما و رطوبت</p>
         </div>
       </div>
-      <div class="uptime-box" style="display:none;"></div>
     </header>
 
     <!-- کارت‌های اصلی -->
@@ -88,12 +86,12 @@
       </div>
     </div>
 
-    <!-- تنظیمات (فقط محدوده‌های هشدار + تلگرام) -->
+    <!-- تنظیمات -->
     <div class="settings glass-panel">
       <h2 class="section-title"><i class="fas fa-sliders"></i> پیکربندی سیستم</h2>
       
       <div class="settings-layout">
-        <!-- بخش محدوده‌ها -->
+        <!-- محدوده‌های هشدار -->
         <div class="settings-group">
           <h4><i class="fas fa-bell"></i> محدوده‌های هشدار</h4>
           <div class="input-group"><label>حداقل دما (°C)</label><input type="number" id="temp_min" class="input-modern" step="0.1" /></div>
@@ -102,7 +100,7 @@
           <div class="input-group"><label>حداکثر رطوبت (%)</label><input type="number" id="hum_max" class="input-modern" step="0.1" /></div>
         </div>
 
-        <!-- فقط سوئیچ تلگرام -->
+        <!-- تلگرام -->
         <div class="settings-group">
           <h4><i class="fas fa-toggle-on"></i> امکانات</h4>
           <div class="toggle-group">
